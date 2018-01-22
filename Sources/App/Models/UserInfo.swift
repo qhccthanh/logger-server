@@ -8,7 +8,7 @@
 import Foundation
 import Vapor
 import FluentProvider
-//import AuthProvider
+import AuthProvider
 
 final class UserInfo: Model, Timestampable, Storable {
 
@@ -29,6 +29,8 @@ final class UserInfo: Model, Timestampable, Storable {
         static let loginType = "loginType"
         static let status = "status"
         static let projectIDs = "projectIDs"
+        static let createdDate = UserInfo.createdAtKey
+        static let updatedDate = UserInfo.updatedAtKey
     }
 
     let storage = Storage()
@@ -39,6 +41,10 @@ final class UserInfo: Model, Timestampable, Storable {
 
     var projects: Children<UserInfo, ProjectInfo> {
         return children()
+    }
+
+    func token() throws -> SimpleToken? {
+        return try children(type: SimpleToken.self, foreignIdKey: "userId").first()
     }
 
     init(name: String, email: String, loginType: LoginType) {
@@ -58,13 +64,13 @@ final class UserInfo: Model, Timestampable, Storable {
     func makeRow() throws -> Row {
         var row = Row()
 
-        try row.set("name", name)
-        try row.set("id", id)
-        try row.set("email", email)
-        try row.set("status", status.rawValue)
-        try row.set("loginType", loginType.rawValue)
-//        try row.set("projectIDs", projects.all().map {$0.idKey} )
-
+        try row.set(Keys.name, name)
+        try row.set(Keys.id, id)
+        try row.set(Keys.email, email)
+        try row.set(Keys.status, status.rawValue)
+        try row.set(Keys.loginType, loginType.rawValue)
+//        try row.set(Keys.createdDate, createdAt)
+//        try row.set(Keys.updatedDate, updatedAt)
         return row
     }
 }
@@ -74,10 +80,12 @@ extension UserInfo: Preparation {
     static func prepare(_ database: Database) throws {
         try database.create(self) { user in
             user.id()
-            user.string("name")
-            user.string("email")
-            user.int("status")
-            user.int("loginType")
+            user.string(Keys.name)
+            user.string(Keys.email)
+            user.int(Keys.status)
+            user.int(Keys.loginType)
+//            user.date(Keys.createdDate)
+//            user.date(Keys.updatedDate)
         }
     }
 
@@ -104,11 +112,14 @@ extension UserInfo: JSONConvertible {
 
     func makeJSON() throws -> JSON {
         var json = JSON()
-        try json.set("id", id?.string)
-        try json.set("name", name)
-        try json.set("email", email)
-        try json.set("status", status.rawValue)
-        try json.set("projectIDs", try projects.all().map {$0.idKey} )
+        try json.set(Keys.id, id)
+        try json.set(Keys.name, name)
+        try json.set(Keys.email, email)
+        try json.set(Keys.status, status.rawValue)
+        try json.set(Keys.projectIDs, try projects.all().map {$0.idKey} )
+        try json.set(Keys.createdDate, createdAt)
+        try json.set(Keys.updatedDate, updatedAt)
+        try json.set("token", try token()?.string)
         return json
     }
 }
@@ -129,4 +140,20 @@ extension UserInfo: Updateable {
             }
         ]
     }
+}
+
+extension UserInfo: TokenAuthenticatable {
+
+    public typealias TokenType = String
+
+    static func authenticate(_ token: Token) throws -> UserInfo {
+        guard let sToken = try SimpleToken.makeQuery().filter("string", .equals, token.string).first(),
+            let user = try sToken.user.get()
+            else {
+            throw Abort.notFound
+        }
+
+        return user
+    }
+
 }

@@ -1,4 +1,5 @@
 import Vapor
+import AuthProvider
 
 extension Droplet {
     func setupRoutes() throws {
@@ -22,7 +23,18 @@ extension Droplet {
         
         try resource("posts", PostController.self)
 
+        // Middleware
+        let authController = AuthContronller()
+        self.post("signup", handler: authController.createUser)
+
+        let tokenMiddleware = TokenAuthenticationMiddleware(UserInfo.self)
+        let authedBuilder = self.grouped(tokenMiddleware)
+
         let userController = UserController()
-        userController.addRoutes(drop: self)
+        userController.addRoutes(builder: authedBuilder)
     }
+}
+
+protocol AuthRouterBuilderProtocol {
+    func addRoutes(builder: RouteBuilder)
 }

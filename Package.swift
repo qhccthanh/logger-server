@@ -16,7 +16,7 @@ let package = Package(
     targets: [
         .target(
             name: "App",
-            dependencies: ["Vapor", "FluentProvider"],
+            dependencies: ["Vapor", "FluentProvider", "AuthProvider"],
             exclude: ["Config", "Public", "Resources"]
         ),
         .target(name: "Run", dependencies: ["App"]),

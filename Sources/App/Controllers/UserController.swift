@@ -8,12 +8,12 @@
 import Foundation
 import Vapor
 
-final class UserController {
+final class UserController: AuthRouterBuilderProtocol {
 
-    func addRoutes(drop: Droplet) {
-        let basic = drop.grouped("users")
+    func addRoutes(builder: RouteBuilder) {
+        let basic = builder.grouped("users")
         basic.get(handler: index)
-        basic.post(handler: store)
+//        basic.post(handler: store)
         basic.delete(handler: clear)
 
         basic.get(UserInfo.parameter, handler: show)

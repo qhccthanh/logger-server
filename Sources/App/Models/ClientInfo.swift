@@ -33,6 +33,7 @@ final class ClientInfo: Model {
         appVersion      = try row.get("appVersion")
         appBuildVersion = try row.get("appBuildVersion")
     }
+    
     func makeRow() throws -> Row {
         var row = Row()
         return row

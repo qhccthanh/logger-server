@@ -11,6 +11,16 @@ import FluentProvider
 
 final class ProjectInfo: Model, Timestampable {
 
+    struct Keys {
+        static let id = "id"
+        static let name = "name"
+        static let ownerId = "ownerId"
+        static let memberIds = "memberIds"
+        static let appIds = "appIds"
+        static let createdDate = UserInfo.createdAtKey
+        static let updatedDate = UserInfo.updatedAtKey
+    }
+
     let storage = Storage()
     var name: String
     let ownerId: Identifier?
@@ -19,8 +29,8 @@ final class ProjectInfo: Model, Timestampable {
         return siblings()
     }
 
-    var apps: Siblings<ProjectInfo, AppInfo, Pivot<ProjectInfo, AppInfo>> {
-        return siblings()
+    var apps: Children<ProjectInfo,AppInfo> {
+        return children()
     }
 
     var owner: Parent<ProjectInfo, UserInfo> {
@@ -40,9 +50,7 @@ final class ProjectInfo: Model, Timestampable {
     func makeRow() throws -> Row {
         var row = Row()
         try row.set("name", name)
-        try row.set("createdAt", createdAt)
-        try row.set("updatedAt", updatedAt)
-        try row.set("ownerID", ownerId)
+        try row.set("ownerId", ownerId)
 //        try row.set("memberIDs", try members.all().map {$0.idKey} )
 //        try row.set("appIDs", try apps.all().map {$0.idKey})
         return row
@@ -54,9 +62,7 @@ extension ProjectInfo: Preparation {
         try database.create(self) { project in
             project.id()
             project.string("name")
-            project.date("createDate")
-            project.parent(UserInfo.self)
-//            project.foreignId(for: UserInfo.self, optional: false, unique: false, foreignIdKey: "ownerId", foreignKeyName: "FK_UserInfo_ProjectInfo")
+            project.foreignId(for: UserInfo.self, optional: false, unique: false, foreignIdKey: "ownerId", foreignKeyName: "FK_UserInfo_ProjectInfo")
 //            project.custom("members", type: "UserInfo")
         }
     }
@@ -84,7 +90,28 @@ extension ProjectInfo: JSONConvertible {
         try json.set("name", name)
         try json.set("memberIDs", try members.all().map {$0.idKey} )
         try json.set("appIDs", try apps.all().map {$0.idKey})
+
         return json
     }
 
 }
+
+// MARK: Update
+
+// This allows the Post model to be updated
+// dynamically by the request.
+extension ProjectInfo: Updateable {
+    // Updateable keys are called when `post.update(for: req)` is called.
+    // Add as many updateable keys as you like here.
+    public static var updateableKeys: [UpdateableKey<ProjectInfo>] {
+        return [
+            // If the request contains a String at key "content"
+            // the setter callback will be called.
+            UpdateableKey(Keys.name, String.self) { user, name in
+                user.name = name
+            }
+        ]
+    }
+}
+
+extension ProjectInfo: ResponseRepresentable { }

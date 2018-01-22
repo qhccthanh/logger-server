@@ -1,5 +1,6 @@
 import FluentProvider
 
+
 extension Config {
     public func setup() throws {
         // allow fuzzy conversions for these types
@@ -18,14 +19,15 @@ extension Config {
     /// Add all models that should have their
     /// schemas prepared before the app boots
     private func setupPreparations() throws {
-        preparations.append(Post.self)
 
+        // Model
+        preparations.append(Post.self)
         preparations.append(UserInfo.self)
         preparations.append(ProjectInfo.self)
 //        preparations.append(Pivot<UserInfo,ProjectInfo>.self)
 //        preparations.append(AppInfo.self)
 //        preparations.append(Pivot<ProjectInfo, UserInfo>.self)
-
+        preparations.append(SimpleToken.self)
     }
 
 
