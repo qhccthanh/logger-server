@@ -13,7 +13,7 @@ final class PostController: ResourceRepresentable {
     /// When consumers call 'POST' on '/posts' with valid JSON
     /// construct and save the post
     func store(_ req: Request) throws -> ResponseRepresentable {
-        let post = try req.post()
+        let post = try req.getModel(type: Post.self)
         try post.save()
         return post
     }
@@ -55,7 +55,7 @@ final class PostController: ResourceRepresentable {
     func replace(_ req: Request, post: Post) throws -> ResponseRepresentable {
         // First attempt to create a new Post from the supplied JSON.
         // If any required fields are missing, this request will be denied.
-        let new = try req.post()
+        let new: Post = try req.getModel(type: Post.self)
 
         // Update the post with all of the properties from
         // the new post
@@ -87,9 +87,11 @@ extension Request {
     /// Create a post from the JSON body
     /// return BadRequest error if invalid 
     /// or no JSON
-    func post() throws -> Post {
-        guard let json = json else { throw Abort.badRequest }
-        return try Post(json: json)
+    func getModel<T: JSONConvertible>(type: T.Type) throws -> T {
+        guard let json = json else {
+            throw Abort.badRequest
+        }
+        return try T(json: json)
     }
 }
 
