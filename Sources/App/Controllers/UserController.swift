@@ -12,12 +12,20 @@ final class UserController: AuthRouterBuilderProtocol {
 
     func addRoutes(builder: RouteBuilder) {
         let basic = builder.grouped("users")
+
+        // GET users/
         basic.get(handler: index)
 //        basic.post(handler: store)
-        basic.delete(handler: clear)
 
+//        basic.delete(handler: clear)
+
+        // GET users/:id
         basic.get(UserInfo.parameter, handler: show)
-        basic.delete(UserInfo.parameter, handler: delete)
+
+        // PUT users/:id
+
+        // DELETE users/:id
+//        basic.delete(UserInfo.parameter, handler: delete)
     }
 
     /// When users call 'GET' on '/posts'
@@ -29,7 +37,7 @@ final class UserController: AuthRouterBuilderProtocol {
     /// When consumers call 'POST' on '/posts' with valid JSON
     /// construct and save the post
     func store(_ req: Request) throws -> ResponseRepresentable {
-        let user = try req.getModel(type: UserInfo.self)
+        let user = try req.getModelFromBody(type: UserInfo.self)
         try user.save()
         return user
     }

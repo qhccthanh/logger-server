@@ -13,30 +13,43 @@ final class ProjectController: AuthRouterBuilderProtocol {
     func addRoutes(builder: RouteBuilder) {
         let basic = builder.grouped("projects")
 
+        // GET /projects getAll
         basic.get(handler: index)
+
+        // POST /projects create
         basic.post(handler: store)
 
+        // GET /projects/:id get item
         basic.get(ProjectInfo.parameter,handler: show)
+
+        // PUT /projects/:id update item
         basic.put(ProjectInfo.parameter,handler: update)
+
+        // DELETE /projects/:id update item
         basic.delete(ProjectInfo.parameter,handler: delete)
     }
 
     func index(_ req: Request) throws -> ResponseRepresentable {
-        return try ProjectInfo.all().makeJSON()
+        let user = try req.getUser()
+        return try user.projects.all().makeJSON()
     }
 
     /// When consumers call 'POST' on '/posts' with valid JSON
     /// construct and save the post
     func store(_ req: Request) throws -> ResponseRepresentable {
-        let post = try req.getModel(type: Post.self)
-        try post.save()
-        return post
+
+        let user = try req.getUser()
+        let project = try req.getModelFromBody(type: ProjectInfo.self, appendJSON: [
+            ProjectInfo.Keys.ownerId: user.id?.int ?? 0
+            ])
+        try project.save()
+        return project
     }
 
     /// When the consumer calls 'GET' on a specific resource, ie:
     /// '/posts/13rd88' we should show that specific post
     func show(_ req: Request) throws -> ResponseRepresentable {
-        let info = try req.parameters.next(ProjectInfo.self)
+        let info = try req.getModelFromQueryParam(type: ProjectInfo.self)
         return info
     }
 

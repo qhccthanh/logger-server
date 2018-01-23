@@ -9,6 +9,8 @@ extension Config {
 
         try setupProviders()
         try setupPreparations()
+
+        self.addConfigurable(middleware: ResponseMiddleware(), name: "ResponseMiddleware")
     }
     
     /// Configure providers

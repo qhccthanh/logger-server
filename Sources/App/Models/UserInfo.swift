@@ -40,7 +40,7 @@ final class UserInfo: Model, Timestampable, Storable {
     var status: Status
 
     var projects: Children<UserInfo, ProjectInfo> {
-        return children()
+        return children(type: ProjectInfo.self, foreignIdKey: ProjectInfo.Keys.ownerId)
     }
 
     func token() throws -> SimpleToken? {
@@ -84,8 +84,6 @@ extension UserInfo: Preparation {
             user.string(Keys.email)
             user.int(Keys.status)
             user.int(Keys.loginType)
-//            user.date(Keys.createdDate)
-//            user.date(Keys.updatedDate)
         }
     }
 
@@ -116,7 +114,7 @@ extension UserInfo: JSONConvertible {
         try json.set(Keys.name, name)
         try json.set(Keys.email, email)
         try json.set(Keys.status, status.rawValue)
-        try json.set(Keys.projectIDs, try projects.all().map {$0.idKey} )
+//        try json.set(Keys.projectIDs, try projects.all().map {$0.idKey} )
         try json.set(Keys.createdDate, createdAt)
         try json.set(Keys.updatedDate, updatedAt)
         try json.set("token", try token()?.string)
@@ -150,7 +148,7 @@ extension UserInfo: TokenAuthenticatable {
         guard let sToken = try SimpleToken.makeQuery().filter("string", .equals, token.string).first(),
             let user = try sToken.user.get()
             else {
-            throw Abort.notFound
+            throw Abort.unauthorized
         }
 
         return user

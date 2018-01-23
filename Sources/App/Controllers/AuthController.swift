@@ -12,7 +12,7 @@ final class AuthContronller {
 
     // Create User
     func createUser(_ req: Request) throws -> ResponseRepresentable {
-        let user = try req.getModel(type: UserInfo.self)
+        let user = try req.getModelFromBody(type: UserInfo.self)
         try user.save()
 
         let token = SimpleToken(user: user)
