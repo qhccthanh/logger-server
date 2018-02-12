@@ -9,10 +9,24 @@ import Foundation
 import Vapor
 import FluentProvider
 
+struct ResponseDefault {
+    static var ok: ResponseRepresentable {
+        return Response(status: .ok)
+    }
+}
+
 extension Request {
 
     func getModelFromQueryParam<T: Model>(type: T.Type) throws ->  T {
         return try self.parameters.next(type.self)
+    }
+
+    func getStorage<T: Model>(type: T.Type) throws -> T {
+        guard let model = self.storage[T.name] as? T else {
+            throw Abort.notFound
+        }
+
+        return model
     }
 
     func getUser() throws -> UserInfo {

@@ -10,7 +10,8 @@ import Vapor
 
 final class UserController: AuthRouterBuilderProtocol {
 
-    func addRoutes(builder: RouteBuilder) {
+    @discardableResult
+    func addRoutes(builder: RouteBuilder) -> RouteBuilder {
         let basic = builder.grouped("users")
 
         // GET users/
@@ -23,9 +24,11 @@ final class UserController: AuthRouterBuilderProtocol {
         basic.get(UserInfo.parameter, handler: show)
 
         // PUT users/:id
+        basic.put(UserInfo.parameter, handler: update)
 
         // DELETE users/:id
 //        basic.delete(UserInfo.parameter, handler: delete)
+        return basic
     }
 
     /// When users call 'GET' on '/posts'
@@ -52,7 +55,7 @@ final class UserController: AuthRouterBuilderProtocol {
     /// When the consumer calls 'DELETE' on a specific resource, ie:
     /// 'posts/l2jd9' we should remove that resource from the database
     func delete(_ req: Request) throws -> ResponseRepresentable {
-        let userInfo = try req.parameters.next(UserInfo.self)
+        let userInfo = try req.getModelFromQueryParam(type: UserInfo.self)
         try userInfo.delete()
         return Response(status: .ok)
     }
@@ -66,12 +69,17 @@ final class UserController: AuthRouterBuilderProtocol {
 
     /// When the user calls 'PATCH' on a specific resource, we should
     /// update that resource to the new values.
-    func update(_ req: Request, userInfo: UserInfo) throws -> ResponseRepresentable {
-        // See `extension Post: Updateable`
-        try userInfo.update(for: req)
+    func update(_ req: Request) throws -> ResponseRepresentable {
 
-        // Save an return the updated post.
-//        try post.save()
+        let userInfo = try req.getModelFromQueryParam(type: UserInfo.self)
+        try userInfo.update(for: req)
+        let user = try req.getUser()
+        
+        if user.id != userInfo.id {
+            throw Abort(.forbidden)
+        }
+
+        try user.save()
         return userInfo
     }
 }

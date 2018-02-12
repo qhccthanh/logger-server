@@ -9,6 +9,59 @@ import Foundation
 import Vapor
 import FluentProvider
 
+final class ProjectMember: Model, Preparation, PivotProtocol {
+
+    static var leftIdKey: String = Keys.projectId
+    static var rightIdKey: String = Keys.userId
+
+    typealias Left = ProjectInfo
+    typealias Right = UserInfo
+
+    struct Keys {
+        static let userId = "user_info_id"
+        static let projectId = "project_info_id"
+    }
+
+    let storage: Storage = Storage()
+    let projectId: Identifier
+    let userId: Identifier
+
+    var userInfo: Parent<ProjectMember, UserInfo> {
+        return parent(id: userId)
+    }
+
+    var projectInfo: Parent<ProjectMember, ProjectInfo> {
+        return parent(id: projectId)
+    }
+
+    init(row: Row) throws {
+        projectId = try row.get(Keys.projectId)
+        userId = try row.get(Keys.userId)
+    }
+
+    func makeRow() throws -> Row {
+        var row = Row()
+        try row.set(Keys.projectId, projectId)
+        try row.set(Keys.userId, userId)
+        return row
+    }
+
+    static func prepare(_ database: Database) throws {
+        try database.create(self) { builder in
+            builder.id()
+//            builder.foreignId(for: ProjectInfo.self, optional: false, unique: false, foreignIdKey: Keys.projectId)
+//            builder.int(Keys.projectId)
+            builder.parent(ProjectInfo.self, optional: false, unique: false, foreignIdKey: Keys.projectId)
+//            builder.foreignId(for: UserInfo.self, optional: false, unique: false, foreignIdKey: Keys.userId)
+            builder.parent(UserInfo.self, optional: false, unique: false, foreignIdKey: Keys.userId)
+        }
+    }
+
+    static func revert(_ database: Database) throws {
+        try database.delete(self)
+    }
+}
+
 final class ProjectInfo: Model, Timestampable {
 
     struct Keys {
@@ -25,13 +78,13 @@ final class ProjectInfo: Model, Timestampable {
     var name: String
     let ownerId: Identifier
 
-//    var members: Siblings<ProjectInfo, UserInfo, Pivot<ProjectInfo, UserInfo>> {
-//        return siblings()
-//    }
-//
-//    var apps: Children<ProjectInfo,AppInfo> {
-//        return children()
-//    }
+    var members: Siblings<ProjectInfo, UserInfo, ProjectMember> {
+        return siblings()
+    }
+
+    var apps: Children<ProjectInfo,AppInfo> {
+        return children(type: AppInfo.self, foreignIdKey: AppInfo.Keys.projectID)
+    }
 
     var owner: Parent<ProjectInfo, UserInfo> {
         return parent(id: ownerId)
@@ -51,8 +104,6 @@ final class ProjectInfo: Model, Timestampable {
         var row = Row()
         try row.set(Keys.name, name)
         try row.set(Keys.ownerId, ownerId)
-//        try row.set("memberIDs", try members.all().map {$0.idKey} )
-//        try row.set("appIDs", try apps.all().map {$0.idKey})
         return row
     }
 }
@@ -85,10 +136,14 @@ extension ProjectInfo: JSONConvertible {
 
     func makeJSON() throws -> JSON {
         var json = JSON()
-        try json.set(Keys.id, id?.string)
+        try json.set(Keys.id, id?.int)
         try json.set(Keys.name, name)
         try json.set(Keys.ownerId, ownerId.int)
-//        try json.set(Keys.memberIds, try members.all().map {$0.idKey} )
+        try json.set(Keys.memberIds, try members.all().map {[
+            UserInfo.Keys.id: $0.id?.int ?? 0,
+            UserInfo.Keys.name: $0.name,
+            UserInfo.Keys.email: $0.email
+            ]})
 //        try json.set(Keys.appIds, try apps.all().map {$0.idKey})
         try json.set(Keys.createdDate, createdAt)
         try json.set(Keys.updatedDate, updatedAt)

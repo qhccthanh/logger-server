@@ -39,8 +39,12 @@ final class UserInfo: Model, Timestampable, Storable {
     var loginType: LoginType
     var status: Status
 
-    var projects: Children<UserInfo, ProjectInfo> {
+    var ownerProjects: Children<UserInfo, ProjectInfo> {
         return children(type: ProjectInfo.self, foreignIdKey: ProjectInfo.Keys.ownerId)
+    }
+
+    var projects: Siblings<UserInfo, ProjectInfo, ProjectMember> {
+        return siblings()
     }
 
     func token() throws -> SimpleToken? {

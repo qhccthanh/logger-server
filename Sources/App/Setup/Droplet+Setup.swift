@@ -5,5 +5,8 @@ extension Droplet {
         try setupRoutes()
         // Do any additional droplet setup
         setupAuthRouter()
+        Droplet.shared = self
     }
+
+    public static var shared: Droplet?
 }

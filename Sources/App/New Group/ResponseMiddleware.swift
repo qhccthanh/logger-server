@@ -21,6 +21,11 @@ final class ResponseMiddleware: Middleware {
             response.body = responseJSON.makeBody()
             return response
         } catch let error {
+
+            if Droplet.shared?.config.environment == .development {
+                throw error
+            }
+
             var responseCode: String = error.localizedDescription
             if let abort = error as? Vapor.Abort {
                 responseCode = abort.status.serverErrorCode

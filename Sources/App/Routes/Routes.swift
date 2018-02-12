@@ -30,21 +30,19 @@ extension Droplet {
         let tokenMiddleware = TokenAuthenticationMiddleware(UserInfo.self)
         let authedBuilder = self.grouped(tokenMiddleware)
 
-        var protecedRoutes = [AuthRouterBuilderProtocol]()
-
         let userController = UserController()
-        protecedRoutes.append(userController)
+        userController.addRoutes(builder: authedBuilder)
 
         let projectController = ProjectController()
-        protecedRoutes.append(projectController)
+        let projectBuilder = projectController.addRoutes(builder: authedBuilder)
 
-        protecedRoutes.forEach {
-            $0.addRoutes(builder: authedBuilder)
-        }
-
+        let appController = AppController()
+        appController.addRoutes(builder: projectBuilder)
     }
 }
 
 protocol AuthRouterBuilderProtocol {
-    func addRoutes(builder: RouteBuilder)
+
+    @discardableResult
+    func addRoutes(builder: RouteBuilder) -> RouteBuilder
 }
